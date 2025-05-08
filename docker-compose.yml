@@ -1,0 +1,47 @@
+# docker-compose.yaml
+version: '3.8' # Use a recent version
+
+services:
+  # Backend Service (Node.js + Socket.IO)
+  backend:
+    build:
+      context: ./navigator-backend # Path to your backend code directory
+      dockerfile: Dockerfile      # Specifies the Dockerfile to use
+    container_name: navigator_backend_service
+    ports:
+      # Map port 4000 on your host to port 4000 in the container
+      # This is the port your backend server listens on
+      - "4000:4000"
+    volumes:
+      # Mount the backend code directory into the container for development
+      # Changes in your local code will reflect inside the container
+      # For production, you might remove this and rely solely on the build context
+      - ./navigator-backend:/app
+      # Prevent node_modules from being overwritten by the volume mount
+      - /app/node_modules
+    environment:
+      # Environment variables can be set here if needed
+      - NODE_ENV=development # Or 'production'
+      # - DATABASE_URL=your_db_connection_string
+    networks:
+      - npm_network # Connect to the custom network
+
+  # Frontend Service (React App served by Nginx)
+  frontend:
+    build:
+      context: ./navigator-frontend # Path to your frontend code directory
+      dockerfile: Dockerfile       # Specifies the Dockerfile to use
+    container_name: navigator_frontend_service
+    ports:
+      # Map port 80 on your host to port 80 in the container (Nginx default)
+      - "1000:80"
+    depends_on:
+      - backend # Optional: Ensures backend starts before frontend (doesn't guarantee readiness)
+    networks:
+      - npm_network # Connect to the custom network
+    # No volume needed for production build served by Nginx
+
+# Define a custom network for services to communicate
+networks:
+  npm_network:
+    external : true
